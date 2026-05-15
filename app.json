@@ -16,6 +16,15 @@
     "scheme": "stacker",
     "experiments": {
       "typedRoutes": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "c95b3c1a-fd6e-4178-a17f-9f0fc64ddb55"
+      }
+    },
+    "android": {
+      "package": "com.mohit_builds.stacker"
     }
   }
 }
