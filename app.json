@@ -11,8 +11,10 @@
       "backgroundColor": "#E8F0FE"
     },
     "plugins": [
-      "expo-router"
-    ],
+  "expo-router",
+  "expo-audio",
+  "expo-video"
+],
     "scheme": "stacker",
     "experiments": {
       "typedRoutes": true
