@@ -1,12 +1,15 @@
 import React, { useEffect } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { StyleSheet, View, useWindowDimensions } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import Animated, { useSharedValue, useAnimatedStyle, withTiming, Easing, withRepeat, cancelAnimation, withDelay, interpolate } from 'react-native-reanimated';
+import Animated, { useSharedValue, useAnimatedStyle, withTiming, Easing, withRepeat, cancelAnimation, withDelay, interpolate, withSpring, useAnimatedReaction } from 'react-native-reanimated';
 import { Colors } from '../theme/colors';
+import { useResponsive } from '../utils/responsive';
+import { GameConfig } from '../constants/game';
+import { cameraSpring } from '../utils/animations';
 
 interface Props {
   children: React.ReactNode;
-  score?: number;
+  progress: Animated.SharedValue<number>;
 }
 
 const GradientLayer = ({ colors, index, progress }: { colors: string[], index: number, progress: Animated.SharedValue<number> }) => {
@@ -34,6 +37,7 @@ const GradientLayer = ({ colors, index, progress }: { colors: string[], index: n
 
 const Cloud = ({ width, left, top, duration, delay, progress }: { width: number, left: string | number, top: string | number, duration: number, delay: number, progress: Animated.SharedValue<number> }) => {
   const floatX = useSharedValue(0);
+  const { scale } = useResponsive();
 
   useEffect(() => {
     floatX.value = withDelay(delay, withRepeat(withTiming(40, { duration, easing: Easing.inOut(Easing.sin) }), -1, true));
@@ -42,7 +46,7 @@ const Cloud = ({ width, left, top, duration, delay, progress }: { width: number,
 
   const style = useAnimatedStyle(() => {
     // Clouds fade in, then slowly fade out as you enter the upper atmosphere
-    const opacity = interpolate(progress.value, [0, 30, 50, 70], [0.6, 0.85, 0.85, 0], 'clamp');
+    const opacity = interpolate(progress.value, [0, 20, 40, 60], [0.5, 0.8, 0.8, 0], 'clamp');
     return { opacity, transform: [{ translateX: floatX.value }] };
   });
 
@@ -55,24 +59,27 @@ const Cloud = ({ width, left, top, duration, delay, progress }: { width: number,
   );
 };
 
-const Bird = ({ left, top, duration, delay, progress }: { left: string | number, top: string | number, duration: number, delay: number, progress: Animated.SharedValue<number> }) => {
+const Bird = ({ top, duration, delay, progress, direction = 1 }: { top: string | number, duration: number, delay: number, progress: Animated.SharedValue<number>, direction?: number }) => {
   const floatY = useSharedValue(0);
+  const floatX = useSharedValue(0);
   const flap = useSharedValue(1);
 
   useEffect(() => {
-    floatY.value = withDelay(delay, withRepeat(withTiming(-20, { duration: duration, easing: Easing.inOut(Easing.sin) }), -1, true));
+    floatY.value = withDelay(delay, withRepeat(withTiming(-20, { duration: 1500, easing: Easing.inOut(Easing.sin) }), -1, true));
     flap.value = withDelay(delay, withRepeat(withTiming(0.2, { duration: 800, easing: Easing.inOut(Easing.sin) }), -1, true));
-    return () => { cancelAnimation(floatY); cancelAnimation(flap); };
-  }, [duration, delay]);
+    const distance = direction === 1 ? 3000 : -3000; // Guaranteed to cross any screen
+    floatX.value = withDelay(delay, withRepeat(withTiming(distance, { duration, easing: Easing.linear }), -1, false));
+    return () => { cancelAnimation(floatY); cancelAnimation(flap); cancelAnimation(floatX); };
+  }, [duration, delay, direction]);
 
   const style = useAnimatedStyle(() => ({
-    opacity: interpolate(progress.value, [10, 25], [0.4, 0], 'clamp'),
-    transform: [{ translateY: floatY.value }],
+    opacity: interpolate(progress.value, [0, 10, 25], [0.4, 0.4, 0], 'clamp'),
+    transform: [{ translateX: floatX.value }, { translateY: floatY.value }, { scaleX: direction }],
   }));
   const flapStyle = useAnimatedStyle(() => ({ transform: [{ scaleY: flap.value }] }));
 
   return (
-    <Animated.View style={[{ position: 'absolute', left, top }, style]} pointerEvents="none">
+    <Animated.View style={[{ position: 'absolute', top, left: direction === 1 ? -100 : '110%' }, style]} pointerEvents="none">
       <Animated.View style={[{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }, flapStyle]}>
         <View style={{ width: 10, height: 2, backgroundColor: Colors.text.primary, borderRadius: 2, transform: [{ rotate: '20deg' }, { translateX: 1 }] }} />
         <View style={{ width: 10, height: 2, backgroundColor: Colors.text.primary, borderRadius: 2, transform: [{ rotate: '-20deg' }, { translateX: -1 }] }} />
@@ -81,22 +88,32 @@ const Bird = ({ left, top, duration, delay, progress }: { left: string | number,
   );
 };
 
-const DistantTrees = ({ progress }: { progress: Animated.SharedValue<number> }) => {
+const DistantTrees = ({ progress, panY }: { progress: Animated.SharedValue<number>, panY: Animated.SharedValue<number> }) => {
   const style = useAnimatedStyle(() => ({
-    opacity: interpolate(progress.value, [0, 15], [0.7, 0], 'clamp'),
-    // Trees sink gracefully downward off-screen as the player ascends
-    transform: [{ translateY: progress.value * 50 }]
+    opacity: interpolate(progress.value, [0, 15], [1, 0], 'clamp'),
+    // Trees and ground sink correctly locked with the calculated panY value
+    transform: [{ translateY: panY.value }]
   }));
 
   return (
-    <Animated.View style={[{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 300 }, style]} pointerEvents="none">
+    <Animated.View style={[StyleSheet.absoluteFillObject, style]} pointerEvents="none">
       {/* Back layer (lighter) */}
-      <View style={{ position: 'absolute', bottom: -50, left: '5%', width: 0, height: 0, borderLeftWidth: 80, borderRightWidth: 80, borderBottomWidth: 250, borderLeftColor: 'transparent', borderRightColor: 'transparent', borderBottomColor: 'rgba(162, 228, 184, 0.3)' }} />
-      <View style={{ position: 'absolute', bottom: -50, right: '15%', width: 0, height: 0, borderLeftWidth: 70, borderRightWidth: 70, borderBottomWidth: 220, borderLeftColor: 'transparent', borderRightColor: 'transparent', borderBottomColor: 'rgba(162, 228, 184, 0.3)' }} />
+      <View style={{ position: 'absolute', bottom: '19%', left: '5%', width: 0, height: 0, borderLeftWidth: 80, borderRightWidth: 80, borderBottomWidth: 250, borderLeftColor: 'transparent', borderRightColor: 'transparent', borderBottomColor: 'rgba(102, 140, 163, 0.4)' }} />
+      <View style={{ position: 'absolute', bottom: '18%', right: '15%', width: 0, height: 0, borderLeftWidth: 70, borderRightWidth: 70, borderBottomWidth: 220, borderLeftColor: 'transparent', borderRightColor: 'transparent', borderBottomColor: 'rgba(102, 140, 163, 0.4)' }} />
+      <View style={{ position: 'absolute', bottom: '14%', left: '5%', width: 0, height: 0, borderLeftWidth: 80, borderRightWidth: 80, borderBottomWidth: 250, borderLeftColor: 'transparent', borderRightColor: 'transparent', borderBottomColor: 'rgba(102, 140, 163, 0.4)' }} />
+      <View style={{ position: 'absolute', bottom: '13%', right: '15%', width: 0, height: 0, borderLeftWidth: 70, borderRightWidth: 70, borderBottomWidth: 220, borderLeftColor: 'transparent', borderRightColor: 'transparent', borderBottomColor: 'rgba(102, 140, 163, 0.4)' }} />
       
       {/* Front layer (slightly darker) */}
-      <View style={{ position: 'absolute', bottom: -20, left: '25%', width: 0, height: 0, borderLeftWidth: 100, borderRightWidth: 100, borderBottomWidth: 300, borderLeftColor: 'transparent', borderRightColor: 'transparent', borderBottomColor: 'rgba(174, 198, 207, 0.4)' }} />
-      <View style={{ position: 'absolute', bottom: -80, right: '-5%', width: 0, height: 0, borderLeftWidth: 90, borderRightWidth: 90, borderBottomWidth: 280, borderLeftColor: 'transparent', borderRightColor: 'transparent', borderBottomColor: 'rgba(174, 198, 207, 0.5)' }} />
+      <View style={{ position: 'absolute', bottom: '19%', left: '25%', width: 0, height: 0, borderLeftWidth: 100, borderRightWidth: 100, borderBottomWidth: 300, borderLeftColor: 'transparent', borderRightColor: 'transparent', borderBottomColor: 'rgba(63, 100, 126, 0.6)' }} />
+      <View style={{ position: 'absolute', bottom: '18%', right: '-5%', width: 0, height: 0, borderLeftWidth: 90, borderRightWidth: 90, borderBottomWidth: 280, borderLeftColor: 'transparent', borderRightColor: 'transparent', borderBottomColor: 'rgba(63, 100, 126, 0.7)' }} />
+      <View style={{ position: 'absolute', bottom: '14%', left: '25%', width: 0, height: 0, borderLeftWidth: 100, borderRightWidth: 100, borderBottomWidth: 300, borderLeftColor: 'transparent', borderRightColor: 'transparent', borderBottomColor: 'rgba(63, 100, 126, 0.6)' }} />
+      <View style={{ position: 'absolute', bottom: '13%', right: '-5%', width: 0, height: 0, borderLeftWidth: 90, borderRightWidth: 90, borderBottomWidth: 280, borderLeftColor: 'transparent', borderRightColor: 'transparent', borderBottomColor: 'rgba(63, 100, 126, 0.7)' }} />
+
+      {/* Ground Layer */}
+      <LinearGradient
+        colors={['rgba(63, 100, 126, 0.8)', '#141e30']}
+        style={{ position: 'absolute', bottom: '-50%', left: 0, right: 0, height: '65%' }}
+      />
     </Animated.View>
   );
 };
@@ -105,15 +122,15 @@ const Airplane = ({ top, duration, delay, progress, direction = 1 }: { top: stri
   const floatX = useSharedValue(0);
 
   useEffect(() => {
-    const distance = direction === 1 ? 800 : -800; // Move far enough to gracefully cross the screen
+    const distance = direction === 1 ? 3000 : -3000; // Expanded to guarantee it crosses the entire screen
     floatX.value = withDelay(delay, withRepeat(withTiming(distance, { duration, easing: Easing.linear }), -1, false));
     return () => cancelAnimation(floatX);
   }, [duration, delay, direction]);
 
   const style = useAnimatedStyle(() => {
     // Airplanes slowly fade into existence only at higher altitudes
-    // They then fade away as you ascend into near-space
-    const opacity = interpolate(progress.value, [15, 35, 60, 80], [0, 0.6, 0.6, 0], 'clamp');
+    // They then fade away gracefully as you ascend into the upper atmosphere
+    const opacity = interpolate(progress.value, [15, 30, 50, 70], [0, 0.5, 0.5, 0], 'clamp');
     return {
       opacity,
       transform: [{ translateX: floatX.value }, { scaleX: direction }]
@@ -142,7 +159,7 @@ const Stars = ({ progress }: { progress: Animated.SharedValue<number> }) => {
   })), []);
 
   const style = useAnimatedStyle(() => ({
-    opacity: interpolate(progress.value, [60, 80], [0, 1], 'clamp')
+    opacity: interpolate(progress.value, [50, 80], [0, 1], 'clamp')
   }));
 
   return (
@@ -163,26 +180,41 @@ const Moon = ({ progress }: { progress: Animated.SharedValue<number> }) => {
   }, []);
 
   const style = useAnimatedStyle(() => ({
-    opacity: interpolate(progress.value, [60, 80, 100], [0, 0.8, 1], 'clamp'),
+    opacity: interpolate(progress.value, [60, 80, 100], [0, 0.7, 1], 'clamp'),
     transform: [
       { translateX: interpolate(progress.value, [80, 100], [0, -80], 'clamp') },
       { translateY: interpolate(progress.value, [60, 90, 100], [40, 0, -30], 'clamp') + floatY.value },
       { scale: interpolate(progress.value, [80, 100], [1, 3.5], 'clamp') }
     ]
   }));
-  return <Animated.View style={[{ position: 'absolute', right: '20%', top: '15%', width: 80, height: 80, borderRadius: 40, backgroundColor: '#FFFDF5', shadowColor: '#FFFDF5', shadowOpacity: 1, shadowRadius: 40 }, style]} pointerEvents="none" />;
+  
+  return (
+    <Animated.View style={[{ position: 'absolute', right: '20%', top: '15%', width: 80, height: 80 }, style]} pointerEvents="none">
+      {/* Atmospheric Moon Radiation / Glow */}
+      <View style={[StyleSheet.absoluteFillObject, { backgroundColor: '#FFFDF5', borderRadius: 40, shadowColor: '#FFFDF5', shadowOpacity: 1, shadowRadius: 60, elevation: 20 }]} />
+      
+      {/* Moon Surface and Craters */}
+      <View style={[StyleSheet.absoluteFillObject, { backgroundColor: '#FFFDF5', borderRadius: 40, overflow: 'hidden' }]}>
+        <View style={{ position: 'absolute', top: 18, left: 20, width: 14, height: 14, borderRadius: 7, backgroundColor: 'rgba(0, 0, 0, 0.05)' }} />
+        <View style={{ position: 'absolute', top: 45, left: 45, width: 22, height: 22, borderRadius: 11, backgroundColor: 'rgba(0, 0, 0, 0.03)' }} />
+        <View style={{ position: 'absolute', top: 52, left: 16, width: 12, height: 12, borderRadius: 6, backgroundColor: 'rgba(0, 0, 0, 0.06)' }} />
+        <View style={{ position: 'absolute', top: 25, left: 55, width: 10, height: 10, borderRadius: 5, backgroundColor: 'rgba(0, 0, 0, 0.04)' }} />
+        <View style={{ position: 'absolute', top: 38, left: 12, width: 8, height: 8, borderRadius: 4, backgroundColor: 'rgba(0, 0, 0, 0.03)' }} />
+      </View>
+    </Animated.View>
+  );
 };
 
 const Satellite = ({ top, duration, delay, progress, direction = 1 }: { top: string | number, duration: number, delay: number, progress: Animated.SharedValue<number>, direction?: number }) => {
   const floatX = useSharedValue(0);
   useEffect(() => {
-    const distance = direction === 1 ? 800 : -800;
+    const distance = direction === 1 ? 3000 : -3000;
     floatX.value = withDelay(delay, withRepeat(withTiming(distance, { duration, easing: Easing.linear }), -1, false));
     return () => cancelAnimation(floatX);
   }, [duration, delay, direction]);
 
   const style = useAnimatedStyle(() => ({
-    opacity: interpolate(progress.value, [70, 90], [0, 0.6], 'clamp'),
+    opacity: interpolate(progress.value, [50, 70], [0, 0.5], 'clamp'),
     transform: [{ translateX: floatX.value }, { scaleX: direction }]
   }));
   return <Animated.View style={[{ position: 'absolute', top, left: direction === 1 ? -50 : '110%', alignItems: 'center', justifyContent: 'center' }, style]} pointerEvents="none">
@@ -192,14 +224,23 @@ const Satellite = ({ top, duration, delay, progress, direction = 1 }: { top: str
   </Animated.View>;
 };
 
-export const Background = ({ children, score = 0 }: Props) => {
-  const progress = useSharedValue(0);
+export const Background = ({ children, progress }: Props) => {
   const breath = useSharedValue(0);
+  const panY = useSharedValue(0);
+  const { scale } = useResponsive();
 
-  useEffect(() => {
-    progress.value = withTiming(score, { duration: 2500, easing: Easing.inOut(Easing.ease) });
-    return () => cancelAnimation(progress);
-  }, [score, progress]);
+  // This hook efficiently reacts to the game's progress to drive the parallax effect
+  useAnimatedReaction(
+    () => progress.value,
+    (currentProgress) => {
+    const panScore = 7; // Wait until score 7 before moving the background
+    const targetPanY = Math.max(0, (currentProgress - panScore) * GameConfig.BLOCK_HEIGHT);
+    
+    // Cinematic Parallax: Earth sinks at 35% the speed of the blocks so it stays visible much longer!
+    panY.value = withSpring(targetPanY * 0.35, cameraSpring);
+    },
+    [progress]
+  );
 
   useEffect(() => {
     breath.value = withRepeat(
@@ -213,10 +254,14 @@ export const Background = ({ children, score = 0 }: Props) => {
   const breathStyle = useAnimatedStyle(() => ({
     transform: [
       { scale: 1.05 },
-      { translateX: (breath.value - 0.5) * 15 },
-      { translateY: (breath.value - 0.5) * 10 }
+      { translateX: (breath.value - 0.5) * 15 * scale },
+      { translateY: (breath.value - 0.5) * 10 * scale }
     ]
   }));
+
+  const cloudWidth1 = 200 * scale;
+  const cloudWidth2 = 140 * scale;
+  const cloudWidth3 = 220 * scale;
 
   return (
     <View style={StyleSheet.absoluteFillObject}>
@@ -231,21 +276,21 @@ export const Background = ({ children, score = 0 }: Props) => {
         <Stars progress={progress} />
         <Moon progress={progress} />
 
-        <DistantTrees progress={progress} />
+        <DistantTrees progress={progress} panY={panY} />
         
-        <Cloud width={200} left="-10%" top="15%" duration={18000} delay={0} progress={progress} />
-        <Cloud width={140} left="60%" top="30%" duration={22000} delay={1000} progress={progress} />
-        <Cloud width={220} left="20%" top="55%" duration={25000} delay={2000} progress={progress} />
+        <Cloud width={cloudWidth1} left="-10%" top="15%" duration={18000} delay={0} progress={progress} />
+        <Cloud width={cloudWidth2} left="60%" top="30%" duration={22000} delay={1000} progress={progress} />
+        <Cloud width={cloudWidth3} left="20%" top="55%" duration={25000} delay={2000} progress={progress} />
 
-        <Bird left="30%" top="25%" duration={12000} delay={0} progress={progress} />
-        <Bird left="35%" top="22%" duration={14000} delay={400} progress={progress} />
-        <Bird left="65%" top="45%" duration={15000} delay={800} progress={progress} />
+        <Bird top="25%" duration={25000} delay={0} progress={progress} direction={1} />
+        <Bird top="22%" duration={30000} delay={4000} progress={progress} direction={-1} />
+        <Bird top="45%" duration={28000} delay={8000} progress={progress} direction={1} />
         
-        <Airplane top="18%" duration={25000} delay={5000} progress={progress} direction={1} />
-        <Airplane top="35%" duration={28000} delay={15000} progress={progress} direction={-1} />
+        <Airplane top="18%" duration={50000} delay={5000} progress={progress} direction={1} />
+        <Airplane top="35%" duration={55000} delay={15000} progress={progress} direction={-1} />
 
-        <Satellite top="20%" duration={35000} delay={8000} progress={progress} direction={1} />
-        <Satellite top="45%" duration={40000} delay={18000} progress={progress} direction={-1} />
+        <Satellite top="20%" duration={60000} delay={8000} progress={progress} direction={1} />
+        <Satellite top="45%" duration={65000} delay={18000} progress={progress} direction={-1} />
       </View>
       {children}
     </View>

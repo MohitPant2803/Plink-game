@@ -5,18 +5,18 @@ export const Colors = {
   },
 
   sky: [
-    ['#E0F2FE', '#F8FAFC'], // 0-10: Soft blue daytime sky to horizon white
-    ['#CBE0F8', '#E0F2FE'], // 10-20: Climbing higher into the blue
-    ['#B6D0F2', '#EAE4F2'], // 20-30: Approaching lavender mist
-    ['#EAE4F2', '#FDF0E6'], // 30-40: Entering soft peach light
-    ['#FDF0E6', '#CBE0F8'], // 40-50: Higher altitudes
-    ['#CBE0F8', '#9ABCE4'], // 50-60: Deepening sky blue
-    ['#9ABCE4', '#6B90C2'], // 60-70: Fading sunset tones
-    ['#6B90C2', '#2D4A70'], // 70-80: Entering dusk
-    ['#2D4A70', '#132640'], // 80-90: Deepening twilight
-    ['#132640', '#0B132B'], // 90-100: Near space
-    ['#0B132B', '#020617'], // 100+: Deep space / stillness
-    ['#020617', '#1A2436'], // 110+: Moon glow atmosphere
+    ['#87ceeb', '#e0f6ff'], // 0-10: Earth - Bright daytime sky
+    ['#5ba9e6', '#87ceeb'], // 10-20: High Sky - Climbing deeper blue
+    ['#7b92c4', '#f4b9a7'], // 20-30: High Sky - Sunset begins (soft peach/blue)
+    ['#5c6d98', '#e2858e'], // 30-40: High Sky - Warm cinematic dusk
+    ['#3f4c77', '#925e78'], // 40-50: Upper Atmosphere - Fading sunlight
+    ['#2a3459', '#4e446b'], // 50-60: Upper Atmosphere - Atmospheric loneliness
+    ['#1a2140', '#2a3459'], // 60-70: Upper Atmosphere - Darker twilight
+    ['#0f152e', '#1a2140'], // 70-80: Space edge
+    ['#070a1a', '#0f152e'], // 80-90: Space - Deep cosmic night
+    ['#02040a', '#070a1a'], // 90-100: Space - Near space stillness
+    ['#000000', '#02040a'], // 100+: Space - Cosmic void
+    ['#000000', '#0a0a1a'], // 110+: Space - Moon glow
   ],
 
   blocks: [

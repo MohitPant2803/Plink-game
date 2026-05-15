@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import * as Haptics from 'expo-haptics';
 import { GameConfig } from '../constants/game';
 import { useAudio } from './useAudio';
@@ -25,26 +25,40 @@ export function useGameLoop() {
   const [score, setScore] = useState(0);
   const [gameOver, setGameOver] = useState(false);
   const [gameWon, setGameWon] = useState(false);
+  const [cinematicDone, setCinematicDone] = useState(false);
   const [stack, setStack] = useState<BlockData[]>([
-    { id: 0, width: GameConfig.INITIAL_BLOCK_WIDTH, xOffset: 0, colorIndex: 0 }, // Base stationary block
-    { id: 1, width: GameConfig.INITIAL_BLOCK_WIDTH, xOffset: 0, colorIndex: 1 }, // First moving block
+    { id: 0, width: GameConfig.INITIAL_BLOCK_WIDTH, xOffset: 0, colorIndex: 4 }, // Base stationary block (Pink)
+    { id: 1, width: GameConfig.INITIAL_BLOCK_WIDTH, xOffset: 0, colorIndex: 0 }, // First moving block (Blue)
   ]);
   const [slicedPieces, setSlicedPieces] = useState<SlicedPieceData[]>([]);
 
   const restart = useCallback(() => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     setStack([
-      { id: 0, width: GameConfig.INITIAL_BLOCK_WIDTH, xOffset: 0, colorIndex: 0 },
-      { id: 1, width: GameConfig.INITIAL_BLOCK_WIDTH, xOffset: 0, colorIndex: 1 },
+      { id: 0, width: GameConfig.INITIAL_BLOCK_WIDTH, xOffset: 0, colorIndex: 4 },
+      { id: 1, width: GameConfig.INITIAL_BLOCK_WIDTH, xOffset: 0, colorIndex: 0 },
     ]);
     setScore(0);
     setGameOver(false);
     setGameWon(false);
+    setCinematicDone(false);
     setSlicedPieces([]);
   }, []);
 
+  useEffect(() => {
+    if (gameWon) {
+      // Unlocks the "Tap to Restart" after the deeply emotional 155-second movie concludes
+      const timer = setTimeout(() => setCinematicDone(true), 155000);
+      return () => clearTimeout(timer);
+    }
+  }, [gameWon]);
+
   const handleTap = useCallback((currentX: number) => {
-    if (gameOver || gameWon) return restart();
+    if (gameOver) return restart();
+    if (gameWon) {
+      if (cinematicDone) return restart();
+      return; // Block all taps while the emotional cinematic is playing!
+    }
 
     setStack((prev) => {
       const movingBlock = prev[prev.length - 1];
@@ -58,8 +72,24 @@ export function useGameLoop() {
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
         playTone(true);
         
-        // Expand slightly as a reward
-        const newWidth = Math.min(movingBlock.width + 10, GameConfig.INITIAL_BLOCK_WIDTH);
+        // Expand slightly as a reward, but strictly respect the absolute left/right bounds
+        const maxLeft = -GameConfig.INITIAL_BLOCK_WIDTH / 2;
+        const maxRight = GameConfig.INITIAL_BLOCK_WIDTH / 2;
+        
+        let targetWidth = movingBlock.width + 12; 
+        let targetLeft = baseBlock.xOffset - targetWidth / 2;
+        let targetRight = baseBlock.xOffset + targetWidth / 2;
+
+        if (targetLeft < maxLeft) {
+          targetLeft = maxLeft;
+          targetRight = Math.min(maxRight, targetLeft + targetWidth); // Push expansion to the right
+        } else if (targetRight > maxRight) {
+          targetRight = maxRight;
+          targetLeft = Math.max(maxLeft, targetRight - targetWidth); // Push expansion to the left
+        }
+        
+        const finalWidth = targetRight - targetLeft;
+        const finalOffset = targetLeft + finalWidth / 2;
         
         const placedBlock = {
           ...movingBlock,
@@ -68,9 +98,9 @@ export function useGameLoop() {
         };
         const newBlock = {
           id: prev.length,
-          width: newWidth,
-          xOffset: baseBlock.xOffset,
-          colorIndex: prev.length % 5,
+          width: finalWidth,
+          xOffset: finalOffset,
+          colorIndex: (prev.length - 1) % 5,
         };
         
         setScore((s) => {
@@ -116,7 +146,7 @@ export function useGameLoop() {
           id: prev.length,
           width: newWidth,
           xOffset: newOffset,
-          colorIndex: prev.length % 5,
+          colorIndex: (prev.length - 1) % 5,
         };
 
         if (sliceWidth > 0) {
@@ -150,8 +180,8 @@ export function useGameLoop() {
 
       return [...prev.slice(0, -1), { ...movingBlock, xOffset: currentX }];
     });
-  }, [gameOver]);
+  }, [gameOver, gameWon, playTone, restart]);
 
 
-  return { stack, score, gameOver, gameWon, handleTap, restart, slicedPieces };
+  return { stack, score, gameOver, gameWon, cinematicDone, handleTap, restart, slicedPieces };
 }

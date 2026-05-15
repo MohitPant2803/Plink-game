@@ -1,10 +1,11 @@
 import React from 'react';
-import { Pressable, Text, StyleSheet } from 'react-native';
+import { Pressable, Text, StyleSheet, useWindowDimensions } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
 import { Colors } from '../theme/colors';
 import { Radius, Spacing } from '../theme/spacing';
 import { Typography } from '../theme/typography';
+import { useResponsive } from '../utils/responsive';
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
@@ -15,6 +16,7 @@ interface ButtonProps {
 
 export const Button = ({ title, onPress }: ButtonProps) => {
   const scale = useSharedValue(1);
+  const { sizing, fontSize } = useResponsive();
 
   const animatedStyle = useAnimatedStyle(() => ({
     transform: [{ scale: scale.value }],
@@ -37,32 +39,36 @@ export const Button = ({ title, onPress }: ButtonProps) => {
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
         onPress();
       }}
-      style={[styles.button, animatedStyle]}
+      style={[
+        styles.button,
+        {
+          paddingVertical: sizing.buttonPadding * 1.2,
+          paddingHorizontal: sizing.buttonPadding * 2.5,
+          borderRadius: sizing.borderRadius,
+          shadowRadius: sizing.shadowRadius,
+        },
+        animatedStyle
+      ]}
     >
-      <Text style={styles.text}>{title}</Text>
+      <Text style={[styles.text, { fontSize: fontSize.md }]}>{title}</Text>
     </AnimatedPressable>
   );
 };
 
 const styles = StyleSheet.create({
   button: {
-    backgroundColor: 'rgba(255, 255, 255, 0.45)', // Soft frosted glass feel
-    paddingVertical: 18,
-    paddingHorizontal: 48,
-    borderRadius: Radius.round,
+    backgroundColor: 'rgba(255, 255, 255, 0.45)',
     borderWidth: 1,
     borderColor: 'rgba(255, 255, 255, 0.8)',
-    shadowColor: Colors.ui.shadow,
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 1,
-    shadowRadius: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
     elevation: 5,
   },
   text: {
     color: Colors.text.primary,
-    fontSize: 15,
     fontWeight: '500',
-    letterSpacing: 4,
+    letterSpacing: 1.2,
     textTransform: 'uppercase',
   },
 });
