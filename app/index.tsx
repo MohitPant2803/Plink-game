@@ -40,7 +40,7 @@ export default function HomeScreen() {
           <Animated.View entering={FadeInUp.duration(1200).springify()} style={styles.titleContainer}>
             <Animated.View style={[{ alignItems: 'center' }, breathingStyle]}>
               <Text style={[styles.title, { fontSize: fontSize.hero }]}>Plink</Text>
-              <Text style={[styles.subtitle, { fontSize: fontSize.sm, marginTop: spacing.sm }]}>A minimalist journey</Text>
+              <Text style={[styles.subtitle, { fontSize: fontSize.sm, marginTop: spacing.sm }]}>Journey to the Moon</Text>
             </Animated.View>
           </Animated.View>
 

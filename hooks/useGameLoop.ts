@@ -47,8 +47,8 @@ export function useGameLoop() {
 
   useEffect(() => {
     if (gameWon) {
-      // Unlocks the "Tap to Restart" after the deeply emotional 155-second movie concludes
-      const timer = setTimeout(() => setCinematicDone(true), 155000);
+      // Unlocks the "Tap to Restart" after the deeply emotional 245-second movie concludes
+      const timer = setTimeout(() => setCinematicDone(true), 245000);
       return () => clearTimeout(timer);
     }
   }, [gameWon]);

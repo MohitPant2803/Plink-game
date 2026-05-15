@@ -40,7 +40,7 @@ const Cloud = ({ width, left, top, duration, delay, progress }: { width: number,
   const { scale } = useResponsive();
 
   useEffect(() => {
-    floatX.value = withDelay(delay, withRepeat(withTiming(40, { duration, easing: Easing.inOut(Easing.sin) }), -1, true));
+    floatX.value = withDelay(delay, withRepeat(withTiming(50, { duration: duration * 2, easing: Easing.inOut(Easing.sin) }), -1, true));
     return () => cancelAnimation(floatX);
   }, [duration, delay]);
 
@@ -179,19 +179,20 @@ const Moon = ({ progress }: { progress: Animated.SharedValue<number> }) => {
     return () => cancelAnimation(floatY);
   }, []);
 
+  const { height } = useWindowDimensions();
+
   const style = useAnimatedStyle(() => ({
-    opacity: interpolate(progress.value, [60, 80, 100], [0, 0.7, 1], 'clamp'),
+    opacity: interpolate(progress.value, [60, 80, 100, 110], [0, 0.7, 1, 0], 'clamp'),
     transform: [
-      { translateX: interpolate(progress.value, [80, 100], [0, -80], 'clamp') },
-      { translateY: interpolate(progress.value, [60, 90, 100], [40, 0, -30], 'clamp') + floatY.value },
-      { scale: interpolate(progress.value, [80, 100], [1, 3.5], 'clamp') }
+      { translateY: interpolate(progress.value, [60, 90, 100, 110], [40, 0, 0, height + 200], 'clamp') + floatY.value },
+      { scale: interpolate(progress.value, [80, 100, 110], [0.8, 3.5, 0], 'clamp') }
     ]
   }));
   
   return (
-    <Animated.View style={[{ position: 'absolute', right: '20%', top: '15%', width: 80, height: 80 }, style]} pointerEvents="none">
+    <Animated.View style={[{ position: 'absolute', left: '50%', top: '25%', marginLeft: -40, marginTop: -40, width: 80, height: 80 }, style]} pointerEvents="none">
       {/* Atmospheric Moon Radiation / Glow */}
-      <View style={[StyleSheet.absoluteFillObject, { backgroundColor: '#FFFDF5', borderRadius: 40, shadowColor: '#FFFDF5', shadowOpacity: 1, shadowRadius: 60, elevation: 20 }]} />
+      <View style={[StyleSheet.absoluteFillObject, { backgroundColor: '#FFFDF5', borderRadius: 40, shadowColor: '#FFFDF5', shadowOpacity: 1, shadowRadius: 80, elevation: 20 }]} />
       
       {/* Moon Surface and Craters */}
       <View style={[StyleSheet.absoluteFillObject, { backgroundColor: '#FFFDF5', borderRadius: 40, overflow: 'hidden' }]}>
@@ -222,6 +223,140 @@ const Satellite = ({ top, duration, delay, progress, direction = 1 }: { top: str
     <View style={{ width: 14, height: 4, backgroundColor: 'rgba(255, 255, 255, 0.8)', borderRadius: 2 }} />
     <View style={{ width: 8, height: 6, backgroundColor: 'rgba(255, 255, 255, 0.4)', borderRadius: 1, marginTop: 1 }} />
   </Animated.View>;
+};
+
+const Mars = ({ progress }: { progress: Animated.SharedValue<number> }) => {
+  const { height, width } = useWindowDimensions();
+  const style = useAnimatedStyle(() => {
+    const startProgress = 120;
+    const endProgress = 150;
+    const opacity = interpolate(progress.value, [startProgress - 5, startProgress, endProgress, endProgress + 5], [0, 1, 1, 0], 'clamp');
+    const translateY = interpolate(progress.value, [startProgress, endProgress], [-100, height + 100]);
+    const translateX = interpolate(progress.value, [startProgress, endProgress], [width * 0.1, -width * 0.2]); // Drifting left
+    return { opacity, transform: [{ translateX }, { translateY }] };
+  });
+  return (
+    <Animated.View style={[{ position: 'absolute', left: '15%', width: 40, height: 40, borderRadius: 20, backgroundColor: '#b74b28', shadowColor: '#b74b28', shadowOpacity: 0.8, shadowRadius: 25 }, style]} pointerEvents="none" />
+  );
+};
+
+const Jupiter = ({ progress }: { progress: Animated.SharedValue<number> }) => {
+  const { height, width } = useWindowDimensions();
+  const style = useAnimatedStyle(() => {
+    const startProgress = 150;
+    const endProgress = 190;
+    const opacity = interpolate(progress.value, [startProgress - 10, startProgress, endProgress, endProgress + 10], [0, 1, 1, 0], 'clamp');
+    const translateY = interpolate(progress.value, [startProgress, endProgress], [-400, height + 400]);
+    return { opacity, transform: [{ translateY }] };
+  });
+  return (
+    <Animated.View style={[{ position: 'absolute', right: -width * 0.5, width: 800, height: 800, borderRadius: 400, backgroundColor: '#c88b3a', shadowColor: '#c88b3a', shadowOpacity: 0.4, shadowRadius: 100, overflow: 'hidden' }, style]} pointerEvents="none">
+       <View style={{ position: 'absolute', top: 180, width: '100%', height: 80, backgroundColor: 'rgba(255,255,255,0.06)'}} />
+       <View style={{ position: 'absolute', top: 320, width: '100%', height: 140, backgroundColor: 'rgba(0,0,0,0.1)'}} />
+       <View style={{ position: 'absolute', top: 520, width: '100%', height: 100, backgroundColor: 'rgba(255,255,255,0.08)'}} />
+       <View style={{ position: 'absolute', top: 350, left: 150, width: 80, height: 50, borderRadius: 40, backgroundColor: 'rgba(150, 50, 20, 0.4)'}} />
+    </Animated.View>
+  );
+};
+
+const DeepSpaceSatellite = ({ top, duration, delay, progress, direction = 1 }: { top: string | number, duration: number, delay: number, progress: Animated.SharedValue<number>, direction?: number }) => {
+  const floatX = useSharedValue(0);
+  useEffect(() => {
+    const distance = direction === 1 ? 3000 : -3000;
+    floatX.value = withDelay(delay, withRepeat(withTiming(distance, { duration, easing: Easing.linear }), -1, false));
+    return () => cancelAnimation(floatX);
+  }, [duration, delay, direction]);
+
+  const style = useAnimatedStyle(() => ({
+    opacity: interpolate(progress.value, [130, 150, 990, 1000], [0, 0.7, 0.7, 0], 'clamp'),
+    transform: [{ translateX: floatX.value }, { scaleX: direction }]
+  }));
+  return <Animated.View style={[{ position: 'absolute', top, left: direction === 1 ? -50 : '110%', alignItems: 'center', justifyContent: 'center' }, style]} pointerEvents="none">
+    <View style={{ width: 12, height: 8, backgroundColor: 'rgba(255, 255, 255, 0.4)', borderRadius: 1, marginBottom: 1 }} />
+    <View style={{ width: 22, height: 6, backgroundColor: 'rgba(255, 255, 255, 0.8)', borderRadius: 2 }} />
+    <View style={{ width: 12, height: 8, backgroundColor: 'rgba(255, 255, 255, 0.4)', borderRadius: 1, marginTop: 1 }} />
+  </Animated.View>;
+};
+
+const MovingStars = ({ progress }: { progress: Animated.SharedValue<number> }) => {
+  const { height } = useWindowDimensions();
+  const starsLayer1 = React.useMemo(() => [...Array(200)].map(() => ({ left: `${Math.random() * 100}%`, top: `${Math.random() * 4000 - 3900}%`, size: Math.random() * 2 + 1, opacity: Math.random() * 0.5 + 0.1 })), []);
+  const starsLayer2 = React.useMemo(() => [...Array(200)].map(() => ({ left: `${Math.random() * 100}%`, top: `${Math.random() * 4000 - 3900}%`, size: Math.random() * 3 + 2, opacity: Math.random() * 0.8 + 0.4 })), []);
+  
+  const style1 = useAnimatedStyle(() => ({
+    opacity: interpolate(progress.value, [100, 106], [0, 1], 'clamp'),
+    transform: [{ translateY: interpolate(progress.value, [106, 250], [0, height * 3.5]) }]
+  }));
+  const style2 = useAnimatedStyle(() => ({
+    opacity: interpolate(progress.value, [100, 106], [0, 1], 'clamp'),
+    transform: [{ translateY: interpolate(progress.value, [106, 250], [0, height * 5.5]) }] // Faster parallax layer
+  }));
+
+  return (
+    <View style={StyleSheet.absoluteFillObject} pointerEvents="none">
+      <Animated.View style={[StyleSheet.absoluteFillObject, style1]}>
+        {starsLayer1.map((s, i) => <View key={`l1-${i}`} style={{ position: 'absolute', left: s.left, top: s.top, width: s.size, height: s.size, backgroundColor: '#FFF', borderRadius: s.size, opacity: s.opacity }} />)}
+      </Animated.View>
+      <Animated.View style={[StyleSheet.absoluteFillObject, style2]}>
+        {starsLayer2.map((s, i) => <View key={`l2-${i}`} style={{ position: 'absolute', left: s.left, top: s.top, width: s.size, height: s.size, backgroundColor: '#FFF', borderRadius: s.size, opacity: s.opacity }} />)}
+      </Animated.View>
+    </View>
+  );
+};
+
+const CosmicFog = ({ progress }: { progress: Animated.SharedValue<number> }) => {
+  const { height } = useWindowDimensions();
+  const style1 = useAnimatedStyle(() => ({
+    opacity: interpolate(progress.value, [106, 120, 180, 200], [0, 0.4, 0.4, 0], 'clamp'),
+    transform: [{ translateY: interpolate(progress.value, [106, 200], [0, height]) }]
+  }));
+  const style2 = useAnimatedStyle(() => ({
+    opacity: interpolate(progress.value, [130, 150, 190, 200], [0, 0.3, 0.3, 0], 'clamp'),
+    transform: [{ translateY: interpolate(progress.value, [120, 200], [0, height * 1.5]) }]
+  }));
+  
+  return (
+    <View style={StyleSheet.absoluteFillObject} pointerEvents="none">
+      <Animated.View style={[{ position: 'absolute', top: '-50%', left: '-50%', width: '200%', height: '200%', backgroundColor: 'rgba(80, 50, 100, 0.1)', borderRadius: 1000 }, style1]} />
+      <Animated.View style={[{ position: 'absolute', top: '-10%', right: '-50%', width: '150%', height: '150%', backgroundColor: 'rgba(40, 80, 120, 0.1)', borderRadius: 800 }, style2]} />
+    </View>
+  );
+};
+
+const Comet = ({ progress, startProgress, duration, top, direction = 1 }: { progress: Animated.SharedValue<number>, startProgress: number, duration: number, top: string | number, direction?: number }) => {
+  const { width } = useWindowDimensions();
+  const translateX = useSharedValue(direction === 1 ? -200 : width + 200);
+
+  useEffect(() => {
+    translateX.value = withDelay(
+      Math.random() * 8000, // Random start delay
+      withRepeat(
+        withTiming(direction === 1 ? width + 200 : -200, { duration, easing: Easing.linear }),
+        -1,
+        false
+      )
+    );
+    return () => cancelAnimation(translateX);
+  }, [width, duration, direction]);
+
+  const style = useAnimatedStyle(() => ({
+    opacity: interpolate(progress.value, [startProgress - 5, startProgress, 990, 1000], [0, 0.7, 0.7, 0], 'clamp'),
+    transform: [{ translateX: translateX.value }, { rotate: direction === 1 ? '-15deg' : '195deg' }]
+  }));
+
+  return <Animated.View style={[{ position: 'absolute', top }, style]} pointerEvents="none"><LinearGradient colors={['rgba(255, 255, 255, 0.6)', 'rgba(255, 255, 255, 0)']} start={{ x: 0, y: 0.5 }} end={{ x: 1, y: 0.5 }} style={{ width: 120, height: 1, borderRadius: 1 }} /></Animated.View>;
+};
+
+const CosmicPlanet = ({ progress, startProgress, left, size, color }: { progress: Animated.SharedValue<number>, startProgress: number, left: string | number, size: number, color: string }) => {
+  const { height } = useWindowDimensions();
+  const style = useAnimatedStyle(() => {
+    const opacity = interpolate(progress.value, [startProgress - 10, startProgress, startProgress + 30, startProgress + 40], [0, 1, 1, 0], 'clamp');
+    const translateY = interpolate(progress.value, [startProgress - 10, startProgress + 40], [-size, height + size], 'clamp');
+    return { opacity, transform: [{ translateY }] };
+  });
+  return (
+    <Animated.View style={[{ position: 'absolute', left, width: size, height: size, borderRadius: size / 2, backgroundColor: color }, style]} pointerEvents="none" />
+  );
 };
 
 export const Background = ({ children, progress }: Props) => {
@@ -291,6 +426,26 @@ export const Background = ({ children, progress }: Props) => {
 
         <Satellite top="20%" duration={60000} delay={8000} progress={progress} direction={1} />
         <Satellite top="45%" duration={65000} delay={18000} progress={progress} direction={-1} />
+
+        {/* Final Cosmic Sequence Drifting Elements */}
+        <MovingStars progress={progress} />
+        <CosmicFog progress={progress} />
+        <Mars progress={progress} />
+        <DeepSpaceSatellite top="35%" duration={45000} delay={5000} progress={progress} direction={-1} />
+        <DeepSpaceSatellite top="15%" duration={55000} delay={25000} progress={progress} direction={1} />
+        <Jupiter progress={progress} />
+
+        <CosmicPlanet progress={progress} startProgress={110} left="15%" size={80} color="rgba(255, 255, 255, 0.04)" />
+        <CosmicPlanet progress={progress} startProgress={118} left="80%" size={50} color="rgba(200, 220, 255, 0.05)" />
+        <CosmicPlanet progress={progress} startProgress={130} left="65%" size={140} color="rgba(255, 255, 255, 0.02)" />
+        <CosmicPlanet progress={progress} startProgress={145} left="5%" size={100} color="rgba(255, 210, 240, 0.03)" />
+        <Comet progress={progress} startProgress={105} duration={8000} top="15%" direction={1} />
+        <Comet progress={progress} startProgress={115} duration={10000} top="60%" direction={-1} />
+        <Comet progress={progress} startProgress={125} duration={7000} top="40%" direction={1} />
+        
+        <Comet progress={progress} startProgress={150} duration={6000} top="25%" direction={-1} />
+        <Comet progress={progress} startProgress={165} duration={9000} top="75%" direction={1} />
+        <Comet progress={progress} startProgress={180} duration={5000} top="10%" direction={-1} />
       </View>
       {children}
     </View>

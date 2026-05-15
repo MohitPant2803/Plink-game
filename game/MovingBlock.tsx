@@ -25,7 +25,7 @@ interface Props {
 export const MovingBlock = ({ width, colorIndex, speed, direction, translateX, gameOver }: Props) => {
   const { width: windowWidth } = useWindowDimensions();
   const screenWidth = Math.min(windowWidth, 500);
-  const maxOscillation = 0; // TEMPORARILY DISABLED: Set to 0 so you can rapidly tap to test the cinematic ending!
+  const maxOscillation = (screenWidth - width) / 2 + 25; // Re-enabled oscillation to make the block move
   const floatY = useSharedValue(0);
 
   useEffect(() => {
