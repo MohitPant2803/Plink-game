@@ -1,0 +1,21 @@
+{
+  "expo": {
+    "name": "Plink",
+    "slug": "stacker",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "icon": "./assets/icon.png",
+    "splash": {
+      "resizeMode": "contain",
+      "backgroundColor": "#E8F0FE"
+    },
+    "plugins": [
+      "expo-router"
+    ],
+    "scheme": "stacker",
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}
