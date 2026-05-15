@@ -46,21 +46,23 @@ export const Button = ({ title, onPress }: ButtonProps) => {
 
 const styles = StyleSheet.create({
   button: {
-    backgroundColor: Colors.text.primary,
-    paddingVertical: Spacing.md,
-    paddingHorizontal: Spacing.xxl,
-    borderRadius: Radius.xl,
-    shadowColor: Colors.text.primary,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
+    backgroundColor: 'rgba(255, 255, 255, 0.45)', // Soft frosted glass feel
+    paddingVertical: 18,
+    paddingHorizontal: 48,
+    borderRadius: Radius.round,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.8)',
+    shadowColor: Colors.ui.shadow,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 1,
+    shadowRadius: 16,
     elevation: 5,
   },
   text: {
-    color: Colors.background.top,
-    fontSize: Typography.size.md,
-    fontWeight: Typography.weight.bold,
-    letterSpacing: Typography.letterSpacing.wide,
+    color: Colors.text.primary,
+    fontSize: 15,
+    fontWeight: '500',
+    letterSpacing: 4,
     textTransform: 'uppercase',
   },
 });
